@@ -1,0 +1,40 @@
+{
+  "name": "brigade",
+  "version": "0.1.0",
+  "description": "A middleware experiment",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run lint && npm run typecheck && npm run unit-tests",
+    "unit-tests": "jest",
+    "lint": "eslint lib",
+    "typecheck": "flow check",
+    "build": "babel src --ignore __tests__ --out-dir dist/src && cp package.json dist/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JeffRMoore/brigade.git"
+  },
+  "author": "Jeff Moore",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/JeffRMoore/brigade/issues"
+  },
+  "homepage": "https://github.com/JeffRMoore/brigade#readme",
+  "devDependencies": {
+    "babel-cli": "^6.24.0",
+    "babel-eslint": "7.2.1",
+    "babel-jest": "^19.0.0",
+    "babel-plugin-transform-flow-strip-types": "^6.22.0",
+    "babel-polyfill": "^6.22.0",
+    "babel-preset-env": "^1.3.2",
+    "eslint": "^3.19.0",
+    "eslint-config-airbnb": "^14.0.0",
+    "eslint-plugin-flowtype": "^2.30.4",
+    "eslint-plugin-import": "^2.2.0",
+    "eslint-plugin-jsx-a11y": "^4.0.0",
+    "eslint-plugin-react": "^6.10.3",
+    "flow-bin": "^0.43.0",
+    "flow-typed": "^2.0.0",
+    "jest-cli": "^19.0.2"
+  }
+}
