@@ -97,65 +97,65 @@ describe('compose', () => {
   });
 
   describe('deep brigade', () => {
-    const deepContext = {
+    const deepRequest = {
       receivedCalls: []
     };
     const deepBrigade = [
-      async (context, next) => {
-        context.receivedCalls.push(1);
+      async (request, next) => {
+        request.receivedCalls.push(1);
         const result = await next();
-        context.receivedCalls.push(6);
+        request.receivedCalls.push(6);
         return result;
       },
-      async (context, next) => {
-        context.receivedCalls.push(2);
+      async (request, next) => {
+        request.receivedCalls.push(2);
         const result = await next();
-        context.receivedCalls.push(5);
+        request.receivedCalls.push(5);
         return result;
       },
-      async (context, next) => {
-        context.receivedCalls.push(3);
+      async (request, next) => {
+        request.receivedCalls.push(3);
         const result = await next();
-        context.receivedCalls.push(4);
+        request.receivedCalls.push(4);
         return result;
       }
     ];
 
     beforeEach(() => {
-      deepContext.receivedCalls = [];
+      deepRequest.receivedCalls = [];
     });
 
     it('should call middleware stack in the right order', async () => {
-      await compose(deepBrigade)(deepContext, terminate, terminate);
-      expect(deepContext.receivedCalls).toEqual([1, 2, 3, 4, 5, 6]);
+      await compose(deepBrigade)(deepRequest, terminate, terminate);
+      expect(deepRequest.receivedCalls).toEqual([1, 2, 3, 4, 5, 6]);
     });
 
     it('should be able to be called twice', async () => {
       const brigade = compose(deepBrigade);
-      await brigade(deepContext, terminate, terminate);
-      expect(deepContext.receivedCalls).toEqual([1, 2, 3, 4, 5, 6]);
-      deepContext.receivedCalls = [];
-      await brigade(deepContext, terminate, terminate);
-      expect(deepContext.receivedCalls).toEqual([1, 2, 3, 4, 5, 6]);
+      await brigade(deepRequest, terminate, terminate);
+      expect(deepRequest.receivedCalls).toEqual([1, 2, 3, 4, 5, 6]);
+      deepRequest.receivedCalls = [];
+      await brigade(deepRequest, terminate, terminate);
+      expect(deepRequest.receivedCalls).toEqual([1, 2, 3, 4, 5, 6]);
     });
 
     it('should propagate the value of calling next', async () => {
       const exepctedValue = { result: 'hello' };
       const nextFn = () => Promise.resolve(exepctedValue);
       const brigade = compose(deepBrigade);
-      const result = await brigade(deepContext, nextFn, terminate);
+      const result = await brigade(deepRequest, nextFn, terminate);
       expect(result).toBe(exepctedValue);
     });
 
     describe('with Skip at the end', () => {
       const brigadeWithSkip = deepBrigade.slice(0);
-      brigadeWithSkip.push((ctx, next, skipNext) => skipNext());
+      brigadeWithSkip.push((request, next, skipNext) => skipNext());
 
       it('should propagate the value of calling skipNext', async () => {
         const exepctedValue = { result: 'hello' };
         const skipFn = () => Promise.resolve(exepctedValue);
         const brigade = compose(brigadeWithSkip);
-        const result = await brigade(deepContext, terminate, skipFn);
+        const result = await brigade(deepRequest, terminate, skipFn);
         expect(result).toBe(exepctedValue);
       });
 
@@ -168,7 +168,7 @@ describe('compose', () => {
         expect.assertions(2);
         try {
           const brigade = compose(brigadeWithSkip);
-          await brigade(deepContext, terminate, skipFn);
+          await brigade(deepRequest, terminate, skipFn);
         } catch (e) {
           expect(e).toBeInstanceOf(Error);
           expect(e.message).toBe(expectedMessage);
@@ -182,7 +182,7 @@ describe('compose', () => {
         expect.assertions(2);
         try {
           const brigade = compose(brigadeWithSkip);
-          await brigade(deepContext, terminate, skipFn);
+          await brigade(deepRequest, terminate, skipFn);
         } catch (e) {
           expect(e).toBeInstanceOf(Error);
           expect(e.message).toBe(expectedMessage);
@@ -207,14 +207,14 @@ describe('compose', () => {
     }
   });
 
-  it('should keep the context across multiple middleware', () => {
-    const ctx = {};
+  it('should keep the request across multiple middleware', () => {
+    const originalRequest = {};
 
     const stack = [];
 
-    const middleware = async (ctx2, next) => {
+    const middleware = async (receivedRequest, next) => {
       const result = await next();
-      expect(ctx2).toBe(ctx);
+      expect(receivedRequest).toBe(originalRequest);
       return result;
     };
 
@@ -222,7 +222,7 @@ describe('compose', () => {
     stack.push(middleware);
     stack.push(middleware);
 
-    return compose(stack)(ctx, terminate, terminate);
+    return compose(stack)(originalRequest, terminate, terminate);
   });
 
   it('should reject on errors in middleware', async () => {
@@ -242,8 +242,8 @@ describe('compose', () => {
   it('should not call next with middleware parameters', () => {
     const brigade = [];
     expect.assertions(3);
-    return compose(brigade)({}, (ctx, next, skipNext) => {
-      expect(ctx).toBe(undefined);
+    return compose(brigade)({}, (request, next, skipNext) => {
+      expect(request).toBe(undefined);
       expect(next).toBe(undefined);
       expect(skipNext).toBe(undefined);
       return Promise.resolve({});
@@ -251,10 +251,10 @@ describe('compose', () => {
   });
 
   it('should not call skipNext with middleware parameters', () => {
-    const brigade = [(context, next, skipNext) => skipNext()];
+    const brigade = [(request, next, skipNext) => skipNext()];
     expect.assertions(3);
-    return compose(brigade)({}, terminate, (ctx, next, skipNext) => {
-      expect(ctx).toBe(undefined);
+    return compose(brigade)({}, terminate, (request, next, skipNext) => {
+      expect(request).toBe(undefined);
       expect(next).toBe(undefined);
       expect(skipNext).toBe(undefined);
       return Promise.resolve({});
@@ -263,11 +263,11 @@ describe('compose', () => {
 
   it('should throw if skipNext() is called multiple times at the beginning', async () => {
     const middleware = [
-      function badDog(ctx, next, skipNext) {
+      function badDog(request, next, skipNext) {
         skipNext();
         return skipNext();
       },
-      (ctx, next) => next()
+      (request, next) => next()
     ];
 
     expect.assertions(3);
@@ -282,11 +282,11 @@ describe('compose', () => {
 
   it('should throw if next() is called multiple times at the beginning', async () => {
     const middleware = [
-      function badDog(ctx, next) {
+      function badDog(request, next) {
         next();
         return next();
       },
-      (ctx, next) => next()
+      (request, next) => next()
     ];
 
     expect.assertions(3);
@@ -301,8 +301,8 @@ describe('compose', () => {
 
   it('should throw if skipNext() is called multiple times at the end', async () => {
     const middleware = [
-      (ctx, next) => next(),
-      function badDog(ctx, next, skipNext) {
+      (request, next) => next(),
+      function badDog(request, next, skipNext) {
         skipNext();
         return skipNext();
       }
@@ -319,8 +319,8 @@ describe('compose', () => {
 
   it('should throw if next() is called multiple times at the end', async () => {
     const middleware = [
-      (ctx, next) => next(),
-      function badDog(ctx, next) {
+      (request, next) => next(),
+      function badDog(request, next) {
         next();
         return next();
       }
@@ -338,7 +338,7 @@ describe('compose', () => {
 
   it('should throw if skipNext() is called after next()', async () => {
     const middleware = [
-      async function badDog(ctx, next, skipNext) {
+      async function badDog(request, next, skipNext) {
         next();
         return skipNext();
       }
@@ -357,7 +357,7 @@ describe('compose', () => {
   it('should throw if next() is called after skipNext()', async () => {
     const middleware = [
       // Flow should probably catch this
-      async function badDog(ctx, next, skipNext) {
+      async function badDog(request, next, skipNext) {
         await skipNext();
         await next();
       }
@@ -439,10 +439,10 @@ describe('compose', () => {
     it('should detect if the chain is broken', async () => {
       const middleware = [
         // Flow should probably catch this
-        async (ctx, next) => {
+        async (request, next) => {
           next();
         },
-        async (ctx, next) => next()
+        async (request, next) => next()
       ];
 
       expect.assertions(2);

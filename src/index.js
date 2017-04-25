@@ -85,7 +85,7 @@ export function compose(middleware: MiddlewareChain): Middleware {
    * Middleware function representing composition of middleware stack
    */
   return function composedMiddleware(
-    context: MiddlewareRequest,
+    request: MiddlewareRequest,
     next: ContinueMiddleware,
     skipNext: ContinueMiddleware
   ): MiddlewareResponse<*> {
@@ -116,7 +116,7 @@ export function compose(middleware: MiddlewareChain): Middleware {
       try {
         let result;
         if (i < middleware.length) {
-          result = middleware[i](context, dispatchNext, dispatchSkipNext);
+          result = middleware[i](request, dispatchNext, dispatchSkipNext);
         } else {
           hasTerminated = true;
           result = next();
