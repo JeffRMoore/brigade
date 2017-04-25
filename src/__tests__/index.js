@@ -403,6 +403,23 @@ describe('compose', () => {
       expect(result).toBe(expectedResponse);
     });
 
+    it('should allow a rejected promise to be returned', async () => {
+      const expectedMessage = 'hello';
+      const middleware = [
+        (request, next, skipNext) => {
+          return Promise.reject(new Error(expectedMessage));
+        }
+      ];
+
+      expect.assertions(2);
+      try {
+        await callMiddleware(compose(middleware), {}, {});
+      } catch (e) {
+        expect(e).toBeInstanceOf(Error);
+        expect(e.message).toBe(expectedMessage);
+      }
+    });
+
     it('should detect if next() or skipNext() not called', async () => {
       const middleware = [
         // Flow should probably catch this
