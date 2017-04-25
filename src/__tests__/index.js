@@ -4,7 +4,9 @@
 import { compose, callMiddleware } from '../index';
 
 describe('compose', () => {
-  const defaultContinueFn = () => Promise.resolve({});
+  const defaultRequest = {};
+  const defaultResponse = {};
+  const defaultContinueFn = () => Promise.resolve(defaultResponse);
 
   describe('empty brigade', () => {
     const emptyBrigade = [];
@@ -13,7 +15,7 @@ describe('compose', () => {
       const expectedValue = { result: 'hello' };
       const nextFn = () => Promise.resolve(expectedValue);
 
-      const result = await compose(emptyBrigade)({}, nextFn, defaultContinueFn);
+      const result = await compose(emptyBrigade)(defaultRequest, nextFn, defaultContinueFn);
       expect(result).toBe(expectedValue);
     });
 
@@ -25,7 +27,7 @@ describe('compose', () => {
 
       expect.assertions(2);
       try {
-        await compose(emptyBrigade)({}, nextFn, defaultContinueFn);
+        await compose(emptyBrigade)(defaultRequest, nextFn, defaultContinueFn);
       } catch (e) {
         expect(e).toBeInstanceOf(Error);
         expect(e.message).toBe(expectedMessage);
@@ -38,7 +40,7 @@ describe('compose', () => {
 
       expect.assertions(2);
       try {
-        await compose(emptyBrigade)({}, nextFn, defaultContinueFn);
+        await compose(emptyBrigade)(defaultRequest, nextFn, defaultContinueFn);
       } catch (e) {
         expect(e).toBeInstanceOf(Error);
         expect(e.message).toBe(expectedMessage);
@@ -50,7 +52,7 @@ describe('compose', () => {
       expect.assertions(2);
       try {
         // $FlowFixMe: override violation for test case
-        await compose(emptyBrigade)({}, notAFunction, defaultContinueFn);
+        await compose(emptyBrigade)(defaultRequest, notAFunction, defaultContinueFn);
       } catch (e) {
         expect(e).toBeInstanceOf(Error);
         expect(e.message).toMatch(/must be a function/);
@@ -62,7 +64,7 @@ describe('compose', () => {
       expect.assertions(2);
       try {
         // $FlowFixMe: override violation for test case
-        await compose(emptyBrigade)({}, defaultContinueFn, notAFunction);
+        await compose(emptyBrigade)(defaultRequest, defaultContinueFn, notAFunction);
       } catch (e) {
         expect(e).toBeInstanceOf(Error);
         expect(e.message).toMatch(/must be a function/);
@@ -200,7 +202,7 @@ describe('compose', () => {
 
     expect.assertions(2);
     try {
-      await compose(middleware)({}, defaultContinueFn, defaultContinueFn);
+      await compose(middleware)(defaultRequest, defaultContinueFn, defaultContinueFn);
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
       expect(e.message).toMatch(/Promise was expected/);
@@ -231,7 +233,7 @@ describe('compose', () => {
 
     stack.push(() => { throw new Error(); });
 
-    await compose(stack)({}, defaultContinueFn, defaultContinueFn)
+    await compose(stack)(defaultRequest, defaultContinueFn, defaultContinueFn)
       .then(sentintel)
       .catch((err) => {
         expect(err).toBeInstanceOf(Error);
@@ -242,22 +244,22 @@ describe('compose', () => {
   it('should not call next with middleware parameters', () => {
     const brigade = [];
     expect.assertions(3);
-    return compose(brigade)({}, (request, next, terminate) => {
+    return compose(brigade)(defaultRequest, (request, next, terminate) => {
       expect(request).toBe(undefined);
       expect(next).toBe(undefined);
       expect(terminate).toBe(undefined);
-      return Promise.resolve({});
+      return Promise.resolve(defaultResponse);
     }, defaultContinueFn);
   });
 
   it('should not call terminate with middleware parameters', () => {
     const brigade = [(context, next, terminate) => terminate()];
     expect.assertions(3);
-    return compose(brigade)({}, defaultContinueFn, (request, next, terminate) => {
+    return compose(brigade)(defaultRequest, defaultContinueFn, (request, next, terminate) => {
       expect(request).toBe(undefined);
       expect(next).toBe(undefined);
       expect(terminate).toBe(undefined);
-      return Promise.resolve({});
+      return Promise.resolve(defaultResponse);
     });
   });
 
@@ -272,7 +274,7 @@ describe('compose', () => {
 
     expect.assertions(3);
     try {
-      await compose(middleware)({}, defaultContinueFn, defaultContinueFn);
+      await compose(middleware)(defaultRequest, defaultContinueFn, defaultContinueFn);
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
       expect(e.message).toMatch(/has called its terminate function after the middleware chain has been terminated/);
@@ -291,7 +293,7 @@ describe('compose', () => {
 
     expect.assertions(3);
     try {
-      await compose(middleware)({}, defaultContinueFn, defaultContinueFn);
+      await compose(middleware)(defaultRequest, defaultContinueFn, defaultContinueFn);
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
       expect(e.message).toMatch(/has called its next function after the middleware chain has been terminated/);
@@ -310,7 +312,7 @@ describe('compose', () => {
 
     expect.assertions(2);
     try {
-      await compose(middleware)({}, defaultContinueFn, defaultContinueFn);
+      await compose(middleware)(defaultRequest, defaultContinueFn, defaultContinueFn);
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
       expect(e.message).toMatch(/has called its terminate function after the middleware chain has been terminated/);
@@ -328,7 +330,7 @@ describe('compose', () => {
 
     expect.assertions(3);
     try {
-      await compose(middleware)({}, defaultContinueFn, defaultContinueFn);
+      await compose(middleware)(defaultRequest, defaultContinueFn, defaultContinueFn);
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
       expect(e.message).toMatch(/has called its next function after the middleware chain has been terminated/);
@@ -346,7 +348,7 @@ describe('compose', () => {
 
     expect.assertions(3);
     try {
-      await compose(middleware)({}, defaultContinueFn, defaultContinueFn);
+      await compose(middleware)(defaultRequest, defaultContinueFn, defaultContinueFn);
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
       expect(e.message).toMatch(/has called its terminate function after the middleware chain has been terminated/);
@@ -365,7 +367,7 @@ describe('compose', () => {
 
     expect.assertions(3);
     try {
-      await compose(middleware)({}, defaultContinueFn, defaultContinueFn);
+      await compose(middleware)(defaultRequest, defaultContinueFn, defaultContinueFn);
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
       expect(e.message).toMatch(/has called its next function after the middleware chain has been terminated/);
@@ -384,7 +386,7 @@ describe('compose', () => {
 
       expect.assertions(2);
       try {
-        await compose(middleware)({}, defaultContinueFn, defaultContinueFn);
+        await compose(middleware)(defaultRequest, defaultContinueFn, defaultContinueFn);
       } catch (e) {
         expect(e).toBeInstanceOf(Error);
         expect(e.message).toMatch(/badDog/);
@@ -399,7 +401,7 @@ describe('compose', () => {
       ];
 
       const expectedResponse = {};
-      const result = await callMiddleware(compose(middleware), {}, expectedResponse);
+      const result = await callMiddleware(compose(middleware), defaultRequest, expectedResponse);
       expect(result).toBe(expectedResponse);
     });
 
@@ -413,7 +415,7 @@ describe('compose', () => {
 
       expect.assertions(2);
       try {
-        await callMiddleware(compose(middleware), {}, {});
+        await callMiddleware(compose(middleware), defaultRequest, defaultResponse);
       } catch (e) {
         expect(e).toBeInstanceOf(Error);
         expect(e.message).toBe(expectedMessage);
@@ -429,7 +431,7 @@ describe('compose', () => {
 
       expect.assertions(2);
       try {
-        await callMiddleware(compose(middleware), {}, {});
+        await callMiddleware(compose(middleware), defaultRequest, defaultResponse);
       } catch (e) {
         expect(e).toBeInstanceOf(Error);
         expect(e.message).toMatch(/terminated with an unexpected response/);
@@ -447,7 +449,7 @@ describe('compose', () => {
 
       expect.assertions(2);
       try {
-        await callMiddleware(compose(middleware), {}, {});
+        await callMiddleware(compose(middleware), defaultRequest, defaultResponse);
       } catch (e) {
         expect(e).toBeInstanceOf(Error);
         expect(e.message).toMatch(/terminated with an unexpected response/);
