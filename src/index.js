@@ -23,7 +23,7 @@ type ContinueMiddleware = () => MiddlewareResponse<*>;
 export type Middleware = (
     request: MiddlewareRequest,
     next: ContinueMiddleware,
-    skipNext: ContinueMiddleware) => MiddlewareResponse<*>;
+    terminate: ContinueMiddleware) => MiddlewareResponse<*>;
 
 /**
  * A Chain of middleware to call
@@ -58,12 +58,12 @@ export function callMiddleware<RESPONSE: Object>(
   request: MiddlewareRequest,
   response: RESPONSE
 ): MiddlewareResponse<RESPONSE> {
-  const terminate = () => Promise.resolve(response);
-  return middleware(request, terminate, terminate).then((result) => {
+  const continueFn = () => Promise.resolve(response);
+  return middleware(request, continueFn, continueFn).then((result) => {
     if (result !== response) {
       return Promise.reject(new Error(
         'Middleware brigade terminated with an unexpected response value indicating ' +
-        'that a middleware function failed to call next or skipNext, or failed to ' +
+        'that a middleware function failed to call next or terminate, or failed to ' +
         'incorporate the resulting value into its own return value'
       ));
     }
@@ -87,12 +87,12 @@ export function compose(middleware: MiddlewareChain): Middleware {
   return function composedMiddleware(
     request: MiddlewareRequest,
     next: ContinueMiddleware,
-    skipNext: ContinueMiddleware
+    terminate: ContinueMiddleware
   ): MiddlewareResponse<*> {
     invariant(typeof next === 'function',
       'next parameter to composed middleware must be a function');
-    invariant(typeof skipNext === 'function',
-      'skipNext parameter to composed middleware must be a function');
+    invariant(typeof terminate === 'function',
+      'terminate parameter to composed middleware must be a function');
 
     let hasTerminated = false;
 
@@ -101,7 +101,7 @@ export function compose(middleware: MiddlewareChain): Middleware {
     /**
      * Dispatch to the i-th middleware in the composed stack, capturing
      * the state necessary to continue the process in the `dispatchNext`
-     * and `dispatchSkipNext` closures.
+     * and `dispatchTerminate` closures.
      * @param {Number} i
      */
     function dispatch(i: number): MiddlewareResponse<*> {
@@ -110,13 +110,13 @@ export function compose(middleware: MiddlewareChain): Middleware {
           middleware,
           i - 1,
           'has called its next function after the middleware chain has been terminated by a prior ' +
-          'call to either its next function or its skipNext function'
+          'call to either its next function or its terminate function'
         ));
       }
       try {
         let result;
         if (i < middleware.length) {
-          result = middleware[i](request, dispatchNext, dispatchSkipNext);
+          result = middleware[i](request, dispatchNext, dispatchTerminate);
         } else {
           hasTerminated = true;
           result = next();
@@ -143,17 +143,17 @@ export function compose(middleware: MiddlewareChain): Middleware {
       /**
        * prematurely terminate the middleware chain
        */
-      function dispatchSkipNext(): MiddlewareResponse<*> {
+      function dispatchTerminate(): MiddlewareResponse<*> {
         if (hasTerminated) {
           throw new Error(locatedError(
             middleware,
             i,
-            'has called its skipNext function after the middleware chain has been terminated by a prior ' +
-            'call to either its next function or its skipNext function'
+            'has called its terminate function after the middleware chain has been terminated by a prior ' +
+            'call to either its next function or its terminate function'
           ));
         }
         hasTerminated = true;
-        return skipNext();
+        return terminate();
       }
     }
   };
