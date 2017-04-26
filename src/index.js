@@ -10,7 +10,7 @@ type MiddlewareRequest = Object;
 /**
  * Response Object that is the result of calling a middleware
  */
-type MiddlewareResponse<T: Object> = Promise<T>;
+type MiddlewareResponse<T: mixed> = Promise<T>;
 
 /**
  * Process the rest of the middleware brigade
@@ -53,13 +53,24 @@ export function callMiddleware<RESPONSE: Object>(
   request: MiddlewareRequest,
   response: RESPONSE
 ): MiddlewareResponse<RESPONSE> {
+  invariant(typeof middleware === 'function',
+    'Middleware must be a function');
+  invariant(typeof request === 'object' && request !== null,
+    'request must be an object');
+  invariant(response === undefined || (typeof response === 'object' && response !== null),
+    'response must be an object if specified');
   const continueFn = () => Promise.resolve(response);
   return middleware(request, continueFn, continueFn).then((result) => {
-    if (result !== response) {
+    if (response !== undefined && result !== response) {
       return Promise.reject(new Error(
         'Middleware brigade terminated with an unexpected response value indicating ' +
         'that a middleware function failed to call next or terminate, or failed to ' +
         'incorporate the resulting value into its own return value'
+      ));
+    }
+    if (result === undefined) {
+      return Promise.reject(new Error(
+        'Middleware brigade result cannot be undefined'
       ));
     }
     return result;

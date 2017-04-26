@@ -395,6 +395,8 @@ describe('compose', () => {
   });
 
   describe('callMiddleware', () => {
+    const defaultMiddleware = async (request, next) => next();
+
     it('should work', async () => {
       const middleware = [
         async (request, next) => next()
@@ -403,6 +405,67 @@ describe('compose', () => {
       const expectedResponse = {};
       const result = await callMiddleware(compose(middleware), defaultRequest, expectedResponse);
       expect(result).toBe(expectedResponse);
+    });
+
+    it('should only accept middleware functions', async () => {
+      const notAFunction = {};
+
+      expect.assertions(2);
+      try {
+        // $FlowFixMe: override violation for test case
+        await callMiddleware(notAFunction, defaultRequest, defaultResponse);
+      } catch (e) {
+        expect(e).toBeInstanceOf(Error);
+        expect(e.message).toMatch(/must be a function/);
+      }
+    });
+
+    it('should only accept objects for request parameter', async () => {
+      const notAnObject = 42;
+
+      expect.assertions(2);
+      try {
+        // $FlowFixMe: override violation for test case
+        await callMiddleware(defaultMiddleware, notAnObject, defaultResponse);
+      } catch (e) {
+        expect(e).toBeInstanceOf(Error);
+        expect(e.message).toMatch(/must be an object/);
+      }
+    });
+
+    it('should not accept null for request parameter', async () => {
+      expect.assertions(2);
+      try {
+        // $FlowFixMe: override violation for test case
+        await callMiddleware(defaultMiddleware, null, defaultResponse);
+      } catch (e) {
+        expect(e).toBeInstanceOf(Error);
+        expect(e.message).toMatch(/must be an object/);
+      }
+    });
+
+    it('should only accept objects for response parameter', async () => {
+      const notAnObject = 42;
+
+      expect.assertions(2);
+      try {
+        // $FlowFixMe: override violation for test case
+        await callMiddleware(defaultMiddleware, defaultRequest, notAnObject);
+      } catch (e) {
+        expect(e).toBeInstanceOf(Error);
+        expect(e.message).toMatch(/must be an object/);
+      }
+    });
+
+    it('should not accept null for response parameter', async () => {
+      expect.assertions(2);
+      try {
+        // $FlowFixMe: override violation for test case
+        await callMiddleware(defaultMiddleware, defaultRequest, null);
+      } catch (e) {
+        expect(e).toBeInstanceOf(Error);
+        expect(e.message).toMatch(/must be an object/);
+      }
     });
 
     it('should allow a rejected promise to be returned', async () => {
