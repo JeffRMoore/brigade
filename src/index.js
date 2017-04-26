@@ -3,22 +3,22 @@
 import invariant from 'invariant';
 
 /**
- * Request object processed through middleware chain
+ * Request object to be passed to each middleware in a brigade
  */
 type MiddlewareRequest = Object;
 
 /**
- * Response Object processed through middleware chain
+ * Response Object that is the result of calling a middleware
  */
 type MiddlewareResponse<T: Object> = Promise<T>;
 
 /**
- * Process the rest of the middleware chain
+ * Process the rest of the middleware brigade
  */
 type ContinueMiddleware = () => MiddlewareResponse<*>;
 
 /**
- * Signature of a middleware function
+ * Signature of a Brigade middleware function
  */
 export type Middleware = (
     request: MiddlewareRequest,
@@ -26,24 +26,24 @@ export type Middleware = (
     terminate: ContinueMiddleware) => MiddlewareResponse<*>;
 
 /**
- * A Chain of middleware to call
+ * A Chain of middleware
  */
-export type MiddlewareChain = Array<Middleware>;
+export type Brigade = Array<Middleware>;
 
 /**
  * Compose an error message that identifies the middleware
  * which triggered the error.
  */
 function locatedError(
-  middleware: MiddlewareChain,
+  brigade: Brigade,
   i: number,
   message: string
 ): string {
   let name;
   if (i < 0) {
     name = 'XYZZY-UPDATE-ME';
-  } else if (i < middleware.length) {
-    name = middleware[i].name;
+  } else if (i < brigade.length) {
+    name = brigade[i].name;
   } else {
     name = 'XYZZY-UPDATE-ME';
   }
@@ -51,7 +51,7 @@ function locatedError(
 }
 
 /**
- * Call a middleware brigade with a request and response object
+ * Call a middleware, which might possibly be a composed brigade, with a request and response object
  */
 export function callMiddleware<RESPONSE: Object>(
   middleware: Middleware,
@@ -75,14 +75,14 @@ export function callMiddleware<RESPONSE: Object>(
  * Compose a middleware "brigade" function composed of a sequence of
  * individual middleware functions.
  */
-export function compose(middleware: MiddlewareChain): Middleware {
-  invariant(Array.isArray(middleware),
-    'Middleware stack must be an array');
-  invariant(middleware.every(fn => typeof fn === 'function'),
-    'Middleware must be composed of functions');
+export function compose(brigade: Brigade): Middleware {
+  invariant(Array.isArray(brigade),
+    'Middleware brigade must be an array');
+  invariant(brigade.every(fn => typeof fn === 'function'),
+    'Middleware brigade must be composed of functions');
 
   /**
-   * Middleware function representing composition of middleware stack
+   * Middleware function representing composition of middleware into a brigade
    */
   return function composedMiddleware(
     request: MiddlewareRequest,
@@ -96,59 +96,59 @@ export function compose(middleware: MiddlewareChain): Middleware {
 
     let hasTerminated = false;
 
-    return dispatch(0);
+    return dispatchToMiddleware(0);
 
     /**
-     * Dispatch to the i-th middleware in the composed stack, capturing
+     * Dispatch to the i-th middleware in the composed middleware brigade, capturing
      * the state necessary to continue the process in the `dispatchNext`
      * and `dispatchTerminate` closures.
      * @param {Number} i
      */
-    function dispatch(i: number): MiddlewareResponse<*> {
+    function dispatchToMiddleware(i: number): MiddlewareResponse<*> {
       if (hasTerminated) {
         throw new Error(locatedError(
-          middleware,
+          brigade,
           i - 1,
-          'has called its next function after the middleware chain has been terminated by a prior ' +
+          'has called its next function after the middleware brigade has been terminated by a prior ' +
           'call to either its next function or its terminate function'
         ));
       }
       try {
-        let result;
-        if (i < middleware.length) {
-          result = middleware[i](request, dispatchNext, dispatchTerminate);
+        let response;
+        if (i < brigade.length) {
+          response = brigade[i](request, dispatchNext, dispatchTerminate);
         } else {
           hasTerminated = true;
-          result = next();
+          response = next();
         }
-        if (typeof result === 'object' && result !== null && typeof result.then === 'function') {
-          return result;
+        if (typeof response === 'object' && response !== null && typeof response.then === 'function') {
+          return response;
         }
         return Promise.reject(new TypeError(locatedError(
-          middleware,
+          brigade,
           i,
-          `has returned a value of type '${typeof result}' when a Promise was expected`
+          `has returned a value of type '${typeof response}' when a Promise was expected`
         )));
       } catch (err) {
         return Promise.reject(err);
       }
 
       /**
-       * Dispatch to the next middleware in the chain
+       * Dispatch to the next middleware in the brigade
        */
       function dispatchNext(): MiddlewareResponse<*> {
-        return dispatch(i + 1);
+        return dispatchToMiddleware(i + 1);
       }
 
       /**
-       * prematurely terminate the middleware chain
+       * prematurely terminate the middleware brigade
        */
       function dispatchTerminate(): MiddlewareResponse<*> {
         if (hasTerminated) {
           throw new Error(locatedError(
-            middleware,
+            brigade,
             i,
-            'has called its terminate function after the middleware chain has been terminated by a prior ' +
+            'has called its terminate function after the middleware brigade has been terminated by a prior ' +
             'call to either its next function or its terminate function'
           ));
         }

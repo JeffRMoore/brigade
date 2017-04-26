@@ -127,7 +127,7 @@ describe('compose', () => {
       deepRequest.receivedCalls = [];
     });
 
-    it('should call middleware stack in the right order', async () => {
+    it('should call middleware brigade in the right order', async () => {
       await compose(deepBrigade)(deepRequest, defaultContinueFn, defaultContinueFn);
       expect(deepRequest.receivedCalls).toEqual([1, 2, 3, 4, 5, 6]);
     });
@@ -212,7 +212,7 @@ describe('compose', () => {
   it('should keep the request across multiple middleware', () => {
     const originalRequest = {};
 
-    const stack = [];
+    const brigade = [];
 
     const middleware = async (receivedRequest, next) => {
       const result = await next();
@@ -220,20 +220,20 @@ describe('compose', () => {
       return result;
     };
 
-    stack.push(middleware);
-    stack.push(middleware);
-    stack.push(middleware);
+    brigade.push(middleware);
+    brigade.push(middleware);
+    brigade.push(middleware);
 
-    return compose(stack)(originalRequest, defaultContinueFn, defaultContinueFn);
+    return compose(brigade)(originalRequest, defaultContinueFn, defaultContinueFn);
   });
 
   it('should reject on errors in middleware', async () => {
-    const stack = [];
+    const brigade = [];
     const sentintel = jest.fn();
 
-    stack.push(() => { throw new Error(); });
+    brigade.push(() => { throw new Error(); });
 
-    await compose(stack)(defaultRequest, defaultContinueFn, defaultContinueFn)
+    await compose(brigade)(defaultRequest, defaultContinueFn, defaultContinueFn)
       .then(sentintel)
       .catch((err) => {
         expect(err).toBeInstanceOf(Error);
@@ -277,7 +277,7 @@ describe('compose', () => {
       await compose(middleware)(defaultRequest, defaultContinueFn, defaultContinueFn);
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
-      expect(e.message).toMatch(/has called its terminate function after the middleware chain has been terminated/);
+      expect(e.message).toMatch(/has called its terminate function after the middleware brigade has been terminated/);
       expect(e.message).toMatch(/badDog/);
     }
   });
@@ -296,7 +296,7 @@ describe('compose', () => {
       await compose(middleware)(defaultRequest, defaultContinueFn, defaultContinueFn);
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
-      expect(e.message).toMatch(/has called its next function after the middleware chain has been terminated/);
+      expect(e.message).toMatch(/has called its next function after the middleware brigade has been terminated/);
       expect(e.message).toMatch(/badDog/);
     }
   });
@@ -315,7 +315,7 @@ describe('compose', () => {
       await compose(middleware)(defaultRequest, defaultContinueFn, defaultContinueFn);
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
-      expect(e.message).toMatch(/has called its terminate function after the middleware chain has been terminated/);
+      expect(e.message).toMatch(/has called its terminate function after the middleware brigade has been terminated/);
     }
   });
 
@@ -333,7 +333,7 @@ describe('compose', () => {
       await compose(middleware)(defaultRequest, defaultContinueFn, defaultContinueFn);
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
-      expect(e.message).toMatch(/has called its next function after the middleware chain has been terminated/);
+      expect(e.message).toMatch(/has called its next function after the middleware brigade has been terminated/);
       expect(e.message).toMatch(/badDog/);
     }
   });
@@ -351,7 +351,7 @@ describe('compose', () => {
       await compose(middleware)(defaultRequest, defaultContinueFn, defaultContinueFn);
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
-      expect(e.message).toMatch(/has called its terminate function after the middleware chain has been terminated/);
+      expect(e.message).toMatch(/has called its terminate function after the middleware brigade has been terminated/);
       expect(e.message).toMatch(/badDog/);
     }
   });
@@ -370,7 +370,7 @@ describe('compose', () => {
       await compose(middleware)(defaultRequest, defaultContinueFn, defaultContinueFn);
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
-      expect(e.message).toMatch(/has called its next function after the middleware chain has been terminated/);
+      expect(e.message).toMatch(/has called its next function after the middleware brigade has been terminated/);
       expect(e.message).toMatch(/badDog/);
     }
   });
