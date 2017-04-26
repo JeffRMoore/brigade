@@ -39,15 +39,10 @@ function locatedError(
   i: number,
   message: string
 ): string {
-  let name;
-  if (i < 0) {
-    name = 'XYZZY-UPDATE-ME';
-  } else if (i < brigade.length) {
-    name = brigade[i].name;
-  } else {
-    name = 'XYZZY-UPDATE-ME';
+  if (i >= 0 && i < brigade.length) {
+    return `Composed middleware #${i} '${brigade[i].name}' ${message}`;
   }
-  return `Composed middleware #${i} '${name}' ${message}`;
+  return message;
 }
 
 /**
