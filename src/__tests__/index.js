@@ -423,9 +423,7 @@ describe('compose', () => {
     it('should allow a rejected promise to be returned', async () => {
       const expectedMessage = 'hello';
       const middleware = [
-        (request, next, terminate) => {
-          return Promise.reject(new Error(expectedMessage));
-        }
+        () => Promise.reject(new Error(expectedMessage))
       ];
 
       expect.assertions(2);

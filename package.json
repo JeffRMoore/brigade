@@ -1,14 +1,14 @@
 {
-  "name": "brigade",
+  "name": "middleware-brigade",
   "version": "0.1.0",
-  "description": "A middleware experiment",
+  "description": "Brigade is a library for composing and calling middleware.",
   "main": "src/index.js",
   "scripts": {
     "test": "npm run lint && npm run typecheck && npm run unit-tests",
     "unit-tests": "jest",
-    "lint": "eslint lib",
+    "lint": "eslint src",
     "typecheck": "flow check",
-    "build": "babel src --ignore __tests__ --out-dir dist/src && cp package.json dist/"
+    "build": "babel src --ignore __tests__ --out-dir dist/src && cp package.json dist/ && cp src/index.js dist/src/index.js.flow"
   },
   "repository": {
     "type": "git",
