@@ -10,12 +10,12 @@ type MiddlewareRequest = Object;
 /**
  * Response Object that is the result of calling a middleware
  */
-type MiddlewareResponse<T: mixed> = Promise<T>;
+type MiddlewareResponse = Promise<mixed>;
 
 /**
  * Process the rest of the middleware brigade
  */
-type ContinueMiddleware = () => MiddlewareResponse<*>;
+type ContinueMiddleware = () => MiddlewareResponse;
 
 /**
  * Signature of a Brigade middleware function
@@ -23,7 +23,7 @@ type ContinueMiddleware = () => MiddlewareResponse<*>;
 export type Middleware = (
     request: MiddlewareRequest,
     next: ContinueMiddleware,
-    terminate: ContinueMiddleware) => MiddlewareResponse<*>;
+    terminate: ContinueMiddleware) => MiddlewareResponse;
 
 /**
  * A Chain of middleware
@@ -48,18 +48,18 @@ function locatedError(
 /**
  * Call a middleware, which might possibly be a composed brigade, with a request and response object
  */
-export function callMiddleware<RESPONSE: Object>(
+export function callMiddleware(
   middleware: Middleware,
   request: MiddlewareRequest,
-  response: RESPONSE
-): MiddlewareResponse<RESPONSE> {
+  response?: Object
+): MiddlewareResponse {
   invariant(typeof middleware === 'function',
     'Middleware must be a function');
   invariant(typeof request === 'object' && request !== null,
     'request must be an object');
   invariant(response === undefined || (typeof response === 'object' && response !== null),
     'response must be an object if specified');
-  const continueFn = () => Promise.resolve(response);
+  const continueFn: ContinueMiddleware = () => Promise.resolve(response);
   return middleware(request, continueFn, continueFn).then((result) => {
     if (response !== undefined && result !== response) {
       return Promise.reject(new Error(
@@ -94,7 +94,7 @@ export function compose(brigade: Brigade): Middleware {
     request: MiddlewareRequest,
     next: ContinueMiddleware,
     terminate: ContinueMiddleware
-  ): MiddlewareResponse<*> {
+  ): MiddlewareResponse {
     invariant(typeof next === 'function',
       'next parameter to composed middleware must be a function');
     invariant(typeof terminate === 'function',
@@ -110,7 +110,7 @@ export function compose(brigade: Brigade): Middleware {
      * and `dispatchTerminate` closures.
      * @param {Number} i
      */
-    function dispatchToMiddleware(i: number): MiddlewareResponse<*> {
+    function dispatchToMiddleware(i: number): MiddlewareResponse {
       if (hasTerminated) {
         throw new Error(locatedError(
           brigade,
@@ -142,14 +142,14 @@ export function compose(brigade: Brigade): Middleware {
       /**
        * Dispatch to the next middleware in the brigade
        */
-      function dispatchNext(): MiddlewareResponse<*> {
+      function dispatchNext(): MiddlewareResponse {
         return dispatchToMiddleware(i + 1);
       }
 
       /**
        * prematurely terminate the middleware brigade
        */
-      function dispatchTerminate(): MiddlewareResponse<*> {
+      function dispatchTerminate(): MiddlewareResponse {
         if (hasTerminated) {
           throw new Error(locatedError(
             brigade,

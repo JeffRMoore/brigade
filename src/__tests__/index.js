@@ -397,7 +397,7 @@ describe('compose', () => {
   describe('callMiddleware', () => {
     const defaultMiddleware = async (request, next) => next();
 
-    it('should work', async () => {
+    it('should work with a response object', async () => {
       const middleware = [
         async (request, next) => next()
       ];
@@ -405,6 +405,36 @@ describe('compose', () => {
       const expectedResponse = {};
       const result = await callMiddleware(compose(middleware), defaultRequest, expectedResponse);
       expect(result).toBe(expectedResponse);
+    });
+
+    it('should work with calculated response', async () => {
+      const expectedResponse = {};
+      const middleware = [
+        async (request, next, terminate) => {
+          await terminate();
+          return expectedResponse;
+        }
+      ];
+
+      const result = await callMiddleware(compose(middleware), defaultRequest);
+      expect(result).toBe(expectedResponse);
+    });
+
+    it('should allow a rejected promise to be returned', async () => {
+      const expectedMessage = 'hello';
+      const middleware = [
+        (request, next, terminate) => {
+          return Promise.reject(new Error(expectedMessage));
+        }
+      ];
+
+      expect.assertions(2);
+      try {
+        await callMiddleware(compose(middleware), defaultRequest, defaultResponse);
+      } catch (e) {
+        expect(e).toBeInstanceOf(Error);
+        expect(e.message).toBe(expectedMessage);
+      }
     });
 
     it('should only accept middleware functions', async () => {
@@ -468,20 +498,20 @@ describe('compose', () => {
       }
     });
 
-    it('should allow a rejected promise to be returned', async () => {
-      const expectedMessage = 'hello';
+    it('should fail if brigade results to undefined', async () => {
       const middleware = [
-        (request, next, terminate) => {
-          return Promise.reject(new Error(expectedMessage));
+        async (request, next, terminate) => {
+          await terminate();
+          return undefined;
         }
       ];
 
       expect.assertions(2);
       try {
-        await callMiddleware(compose(middleware), defaultRequest, defaultResponse);
+        await callMiddleware(compose(middleware), defaultRequest);
       } catch (e) {
         expect(e).toBeInstanceOf(Error);
-        expect(e.message).toBe(expectedMessage);
+        expect(e.message).toMatch(/cannot be undefined/);
       }
     });
 
