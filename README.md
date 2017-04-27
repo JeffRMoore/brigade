@@ -10,7 +10,7 @@ Brigade is named after the concept of a [Bucket Brigade](https://en.wikipedia.or
 
 ## Brigade Middleware Signature
 
-A brigade middleware is always asynchronous.  If javascript `async` functions are used, it has the following signature:
+A brigade middleware is always asynchronous.  If javascript [`async`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function) functions are used, it has the following signature:
 
 ```js
 async function middleware(request, next, terminate) {
@@ -29,7 +29,7 @@ function middleware(request, next, terminate) {
 `request` represents the data that is to be operated on and must be an object.
 
 `next` and `terminate` are functions that determine how the rest of the middleware chain is processed.
-These are known as continue functions.  The middleware function MUST call either `next` or `terminate`, or throw an error
+These are known as _continue functions_.  The middleware function MUST call either `next` or `terminate`, or throw an error
  or return a rejected promise.
 
 if `next` is called, then control is passed to the next middleware in the chain, which will receive the
@@ -217,7 +217,7 @@ TODO
 
 ### Asynchronous
 
-Unlike connect style middleware and like Koa, Brigade middleware is asynchronous.  A middleware may allow the chain
+Unlike [connect](https://github.com/senchalabs/connect) style middleware and like [Koa](https://github.com/koajs/compose), Brigade middleware is asynchronous.  A middleware may allow the chain
 to continue while continuing to process the request.
 
 ### Robust error detection and error messaging
@@ -231,9 +231,11 @@ Brigade includes flowtype type definitions.  Types can detect many types of erro
 eplicitly checks for.  The advantage to type checking is that the error can be caught earlier, at development time.
 This is an area where feedback is valued.
 
+[Leave feedback on the type definitions](https://github.com/JeffRMoore/brigade/issues/1)
+
 ### Strict timing of the use of request and response
 
-Connect middleware accepts both a `request` and `response` parameters and the middleware may modify the response
+[Connect](https://github.com/senchalabs/connect) style middleware accepts both a `request` and `response` parameters and the middleware may modify the response
 before continuing to the rest of the middleware chain, or after.  Brigade includes only the `request` parameter.  The
 response  is acquired from downstream by calling the continue function (`next` or `terminate`).  This was done for two reasons.
 
@@ -248,6 +250,8 @@ the chain of asynchronous operations will be unexpectedly broken.
 Koa middleware uses a single `context` parameter that encapsulates both the request and response.  This style is also
 usable with Brigade.
 
+[Are there cases where response is needed prior to calling next?](https://github.com/JeffRMoore/brigade/issues/2)
+
 ### Explicit indication of intent to terminate
 
 Its an accepted middleware pattern for a middleware to determine that it has fully handled a request and refuse to 
@@ -260,8 +264,8 @@ Unlikely other middleware, Brigade uses passes two different continuation functi
 clear to the reader of the code, eliminates the need for a comment, and allows for the detection of the unintentional
 failure to continue the middleware chain.
 
-Without the `terminate` parameter, the Sentinel Response pattern would not be possible since there would be no way for 
-the middleware to acquire the sentinel to return it in the case where the middleware chain was being pre-maturely
+Without the `terminate` parameter, the [Sentinel Response](#sentinel-response) pattern would not be possible since there would be no way for 
+the middleware to acquire the sentinel to return it in the case where the middleware chain was being prematurely
 terminated.
 
 ### ES6 Module support
@@ -269,6 +273,8 @@ terminated.
 Its the intent of Brigade to support es6 modules.  Currently babel is used.
 I'm not sure what the best pattern is for deploying es6 modules to both node and browser
 contexts.  Help wanted.
+
+[What is the best way to use es6 modules with npm?](https://github.com/JeffRMoore/brigade/issues/3)
 
 ## Questions
 
@@ -289,11 +295,11 @@ You should re-implement `callMiddleware` to better suit your use case.  This cas
 
 ## Acknowledgements
 
-Brigade is based on koa-compose and began as a pull request against that library.  Koa and Koa-compose are phenonominal works
+Brigade is based on [koa-compose](https://github.com/koajs/compose) and began as a pull request against that library.  Koa and Koa-compose are phenonominal works
 of engineering.  However, some key goals of Brigade are not goals of Koa and it did not make sense to merge the PR,
 given the turmoil that might cause relative to the possible benefits.  I released that work here to be able to use it
-in other libraries.  I hope that someday this will become part of Koa.
+in other libraries.  I hope that someday this will become part of [Koa](https://github.com/koajs/koa).
 
 ## Contributing
 
-Help is welcome.
+[Help and feedback is welcome.](https://github.com/JeffRMoore/brigade/issues)
