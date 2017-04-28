@@ -203,15 +203,105 @@ function createChoice(A, B) {
 
 ## Error Handling
 
-TODO
+In `async` middleware functions, errors from calling the continuation function will be
+registered as exceptions.  JavaScript will automatically conver rejected promises to
+exceptions.  The errors can be handled with `try` and `catch`.
 
-## Failure modes
+```js
+async function middleware(request, next, terminate) {
+  try {
+    const result = await next();
+  } catch (e) {
+    handleError(e);
+  }
+  return result;
+}
+```
 
-TODO
+Errors can be raised by using `throw`.
+
+```js
+async function middleware(request, next, terminate) {
+  throw new Error('Always Fails');
+}
+```
+
+In a standard function returning a promise, the [`catch`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch) method sould be used.
+
+```js
+async function middleware(request, next, terminate) {
+  return next().catch( err => handleError(e));
+}
+
+```
+
+Return a rejected promise to raise an error.
+
+```js
+async function middleware(request, next, terminate) {
+  return Promise.reject('Always Fails');
+}
+```
+
+## Failure Modes
+
+Brigade middleware is asynchronous and uses Promises to coordinate code that runs at different times.
+(Under the hood, JavaScript's `async` functions map to promises.)  The biggest failure mode with
+brigade is failing to chain together the promise received from calling `next` or `terminate` with
+the promise returned by the middleware.  Much of the structure of brigade is meant to prevent or detect that.
+
+
+### Failure to use the result of calling next
+
+An `async` function always returns a promise. Any value that is returned is wrapped in a Promise.
+If no return value is specified, a Promise resolving to `undefined` will be returned.
+
+For example, this middleware has no connection between the Promise returned by `next` and the 
+implicit promise created by javascript when `badExample` finishes executing.
+
+```js
+function badExample(request, next, terminate) {
+  next();
+}
+```
+
+This can be re-written as 
+
+```js
+function goodExample(request, next, terminate) {
+  return next();
+}
+```
+
+### Failure to use await in an async function
+
+This example returns a promise, but does not wait for its result.  `await` is required to halt execution
+ until the remainder of the chain is complete.  The following example will execute in an
+ unexpected order.  `doSomething` may execute before logic specified by `next`.
+
+```js
+function badExample(request, next, terminate) {
+  const result = next();
+  doSomething();
+  return result;
+}
+```
+
+Adding `await` makes the execution order deterministic.
+
+```js
+function goodExample(request, next, terminate) {
+  const result = await next();
+  doSomething();
+  return result;
+}
+```
 
 ## Testing Middleware
 
-TODO
+When writing tests for middleware, please remember to write a test case where the continuation
+method used `next` or `terminate` completes with an expected result object, as well as when
+it completes with a rejected Promise.
 
 ## Library Goals
 
